@@ -47,7 +47,7 @@ working today. Phase 2 (roadmap) adds AST rules + compiler validation.
 
 ```
 Paste code  →  Flask prompt  →  local Ollama (1.5b)  →  strip fences
-        →  6 heuristic checks  →  code + confidence badge
+  →  confidence checks  →  code + confidence badge
 ```
 
 ### Confidence-check engine (the judging differentiator)
@@ -99,6 +99,48 @@ you can reload recent source, output, language pairs, and confidence results.
 Phase 1 is a **single conversion path**: UI → Flask → Ollama → static analysis.
 There is no AST rules engine in this MVP; that is the documented Phase 2.
 
+### Accessible text walkthrough
+
+The Mermaid diagrams below are a visual summary. This is the same workflow in
+plain text, step by step:
+
+1. **Input:** The user selects a source language, a target language, and pastes
+  source code into the browser page served from `index.html`.
+2. **Request:** Clicking **Convert Code** sends a `POST` request to
+  `/convert`. Its JSON body contains `source_lang`, `target_lang`, and `code`.
+3. **Prompt:** Flask receives the request in `app.py` and inserts those values
+  into `PROMPT_TEMPLATE`. The prompt asks Ollama to preserve behavior and
+  return only target-language code.
+4. **Local generation:** Flask sends the prompt to Ollama at
+  `http://localhost:11434/api/generate`. Ollama runs
+  `qwen2.5-coder:1.5b` on the same laptop and returns generated text.
+5. **Cleanup:** Flask removes accidental three-backtick Markdown fences from
+  the model response.
+6. **Validation:** Flask checks the cleaned output. It always checks empty
+  output and balanced brackets. JavaScript-family targets also get the JSX,
+  identifier, hook-import, and object-key checks. Python targets get
+  `ast.parse`; plain JavaScript targets also get `node --check` when Node.js
+  is installed.
+7. **Result:** Flask returns JSON containing `converted_code` and a
+  `confidence` object with `status` and `issues`. The browser displays the
+  code, badge, and review messages.
+8. **History:** After a successful response, the browser stores the source,
+  target, code, result, confidence, and timestamp in local browser storage.
+  The backend never receives this history data.
+
+The `/health` endpoint is separate from conversion: it reports that Flask is
+running and which model name is configured. The `/examples` endpoints load the
+demo buttons; they do not call Ollama until the user clicks **Convert Code**.
+
+### What “70%” means
+
+The “70%” statement is a **Phase 2 target, not 70 unresolved problems** and
+not a measured guarantee. It means the team may later add deterministic AST
+rules for common migration patterns, then reserve the model for ambiguous
+code. The current Phase 1 implementation is intentionally prompt-based and
+uses confidence checks after generation. No claim is made that it can safely
+convert every program without human review.
+
 ```mermaid
 flowchart LR
   subgraph Browser["1. Browser — index.html"]
@@ -110,7 +152,7 @@ flowchart LR
     Convert["POST /convert<br/>Receive JSON"]
     Prompt["Build strict prompt<br/>Preserve logic; code only"]
     Clean["Clean model output<br/>Remove markdown fences"]
-    Check["Run confidence checks<br/>6 heuristics + Python AST"]
+    Check["Run confidence checks<br/>heuristics + Python AST + Node"]
     Response["Return JSON<br/>converted_code + confidence + issues"]
   end
 
