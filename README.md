@@ -97,31 +97,32 @@ Phase 1 is a **single conversion path**: UI → Flask → Ollama → static anal
 There is no AST rules engine in this MVP; that is the documented Phase 2.
 
 ```mermaid
-flowchart TB
-  subgraph Browser["Browser — index.html"]
-    UI["Language dropdowns<br/>source + converted textareas<br/>Convert button"]
-    Badge["Confidence badge<br/>High / Medium / Needs Review"]
+flowchart LR
+  subgraph Browser["1. Browser — index.html"]
+    Input["Choose languages<br/>Paste source code"]
+    Results["Show converted code<br/>Confidence badge + issues"]
   end
 
-  subgraph Flask["Flask — app.py :5000"]
-    Convert["POST /convert"]
-    Prompt["Strict prompt builder"]
-    Strip["Strip markdown fences"]
-    Conf["Confidence engine<br/>6 heuristics"]
-    Health["GET /health"]
+  subgraph Backend["2. Flask backend — app.py :5000"]
+    Convert["POST /convert<br/>Receive JSON"]
+    Prompt["Build strict prompt<br/>Preserve logic; code only"]
+    Clean["Clean model output<br/>Remove markdown fences"]
+    Check["Run confidence checks<br/>6 heuristics + Python AST"]
+    Response["Return JSON<br/>converted_code + confidence + issues"]
   end
 
-  subgraph LocalAI["Ollama — localhost:11434"]
-    Model["qwen2.5-coder:1.5b<br/>offline, no API key"]
+  subgraph Ollama["3. Local Ollama — localhost:11434"]
+    Model["qwen2.5-coder:1.5b<br/>Runs offline on the laptop"]
   end
 
-  UI -->|"JSON: source_lang, target_lang, code"| Convert
+  Input -->|"JSON: source_lang,<br/>target_lang, code"| Convert
   Convert --> Prompt
   Prompt -->|"POST /api/generate"| Model
-  Model -->|"raw converted text"| Strip
-  Strip --> Conf
-  Conf -->|"converted_code + confidence"| Badge
-  Health -.->|"ok"| UI
+  Model -->|"Raw converted text"| Clean
+  Clean --> Check --> Response
+  Response -->|"JSON response"| Results
+
+  Health["GET /health"] -.->|"Service status"| Input
 ```
 
 ```mermaid
