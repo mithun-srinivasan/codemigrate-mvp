@@ -100,6 +100,9 @@
     }
     .examples .hint { color: #64748b; font-size: 12px; margin-right: 4px; }
     #statusText { color: #94a3b8; font-size: 14px; }
+    .history { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .history label { color: #94a3b8; font-size: 13px; }
+    .history select { min-width: 260px; }
   </style>
 </head>
 <body>
@@ -133,6 +136,14 @@
     <span class="hint">Demo snippets:</span>
   </div>
 
+  <div class="history">
+    <label for="historySelect">Recent conversions</label>
+    <select id="historySelect" onchange="loadHistory(this.value)">
+      <option value="">No saved conversions</option>
+    </select>
+    <button class="secondary" type="button" onclick="clearHistory()">Clear History</button>
+  </div>
+
   <div class="panels">
     <div class="panel">
       <label>Source Code</label>
@@ -153,11 +164,72 @@
     const BACKEND_URL = window.location.protocol === "file:"
       ? "http://localhost:5000"
       : "";
+    const HISTORY_KEY = "codemigrate-history";
+    const MAX_HISTORY_ITEMS = 20;
 
     function setSelectValue(id, value) {
       const el = document.getElementById(id);
       const match = [...el.options].find(o => o.value === value);
       if (match) el.value = value;
+    }
+
+    function getHistory() {
+      try {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+        return Array.isArray(history) ? history : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function saveHistory(entry) {
+      const history = [entry, ...getHistory()].slice(0, MAX_HISTORY_ITEMS);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const select = document.getElementById("historySelect");
+      const history = getHistory();
+      select.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.innerText = history.length ? "Select a saved conversion" : "No saved conversions";
+      select.appendChild(placeholder);
+      history.forEach((entry, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.innerText = `${entry.source_lang} → ${entry.target_lang} · ${entry.created_at}`;
+        select.appendChild(option);
+      });
+    }
+
+    function loadHistory(index) {
+      if (index === "") return;
+      const entry = getHistory()[Number(index)];
+      if (!entry) return;
+      setSelectValue("source", entry.source_lang);
+      setSelectValue("target", entry.target_lang);
+      document.getElementById("input").value = entry.source_code;
+      document.getElementById("output").value = entry.converted_code;
+      document.getElementById("downloadBtn").disabled = false;
+      const badgeMap = {
+        high_confidence: ["high", "High Confidence"],
+        medium_confidence: ["medium", "Medium Confidence"],
+        low_confidence: ["low", "Needs Review"]
+      };
+      const [cls, label] = badgeMap[entry.confidence.status] || ["none", ""];
+      const badge = document.getElementById("confidenceBadge");
+      badge.className = `badge ${cls}`;
+      badge.innerText = label;
+      document.getElementById("issuesText").innerText = entry.confidence.issues.join(" · ");
+      document.getElementById("statusText").innerText = "Saved conversion loaded";
+    }
+
+    function clearHistory() {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      document.getElementById("statusText").innerText = "Conversion history cleared";
     }
 
     async function loadExamples() {
@@ -265,6 +337,14 @@
           badge.className = `badge ${cls}`;
           badge.innerText = label;
           issuesText.innerText = conf.issues.join(" · ");
+          saveHistory({
+            source_lang: document.getElementById("source").value,
+            target_lang: document.getElementById("target").value,
+            source_code: code,
+            converted_code: data.converted_code,
+            confidence: conf,
+            created_at: new Date().toLocaleString()
+          });
         } else {
           const hint = data.hint ? " — " + data.hint : "";
           statusText.innerText = "❌ " + data.message + hint;
@@ -276,6 +356,7 @@
       }
     }
 
+    renderHistory();
     loadExamples();
   </script>
 </body>

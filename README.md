@@ -88,6 +88,8 @@ right issues, and did not false-positive on clean Python → JavaScript output.
 | Java Stack | Java → Python | Non-JS pair; Python `ast.parse` on output |
 
 Add more: drop a file in `examples/` and a row in `examples/manifest.json`.
+Successful conversions are saved locally in the browser's history selector so
+you can reload recent source, output, language pairs, and confidence results.
 
 ---
 
@@ -256,7 +258,6 @@ Pick one. Do not mix a Phase-2 rewrite into a first PR.
 - Stream Ollama tokens so the UI is not stuck on “Converting…”
 - Optional **Groq free-tier fallback** if live Ollama is too slow
 - Chunk large files function-by-function
-- Conversion **history** (localStorage is enough)
 - `node --check` when the target is JS and Node is installed
 
 Phase 2 (later, team decision): AST rules for common Angular→React patterns,
