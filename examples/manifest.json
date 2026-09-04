@@ -1,0 +1,50 @@
+[
+  {
+    "id": "python_greet",
+    "label": "Python → JS (clean)",
+    "source_lang": "Python",
+    "target_lang": "JavaScript",
+    "file": "python_greet.py",
+    "note": "Simple function. Expect a clean conversion and usually high_confidence."
+  },
+  {
+    "id": "shopping_cart",
+    "label": "ShoppingCart Python → JS",
+    "source_lang": "Python",
+    "target_lang": "JavaScript",
+    "file": "shopping_cart.py",
+    "note": "Class with constructor, loop, conditionals, exception. Medium complexity."
+  },
+  {
+    "id": "todo_item_angular",
+    "label": "Angular TodoItem → React",
+    "source_lang": "Angular",
+    "target_lang": "React",
+    "file": "todo_item.component.ts",
+    "note": "1.5b often emits duplicate className and undefined toggle. Detector should go low_confidence — this is the demo of why the badge exists."
+  },
+  {
+    "id": "login_form_angular",
+    "label": "Angular LoginForm → React",
+    "source_lang": "Angular",
+    "target_lang": "React",
+    "file": "login_form.component.ts",
+    "note": "Reactive form + validators. Watch for missing hooks / event wiring."
+  },
+  {
+    "id": "user_service_rxjs",
+    "label": "Angular RxJS service → React",
+    "source_lang": "Angular",
+    "target_lang": "React",
+    "file": "user.service.ts",
+    "note": "HttpClient + map(). Expect MIGRATION_NOTE around Observable vs fetch/useEffect."
+  },
+  {
+    "id": "java_stack",
+    "label": "Java Stack → Python",
+    "source_lang": "Java",
+    "target_lang": "Python",
+    "file": "stack.java",
+    "note": "Array-backed stack. Python output is checked with ast.parse."
+  }
+]
