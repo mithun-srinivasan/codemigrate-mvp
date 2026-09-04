@@ -30,6 +30,9 @@ import json
 import os
 import re
 import requests
+import shutil
+import subprocess
+import tempfile
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -228,6 +231,39 @@ def find_python_syntax_errors(code: str) -> list:
     return []
 
 
+def find_javascript_syntax_errors(code: str) -> list:
+    """Use Node's parser when it is installed; skip silently otherwise."""
+    node = shutil.which("node")
+    if not node:
+        return []
+
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", encoding="utf-8", delete=False) as source_file:
+            source_file.write(code)
+            source_path = source_file.name
+        result = subprocess.run(
+            [node, "--check", source_path],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    finally:
+        if "source_path" in locals():
+            try:
+                os.unlink(source_path)
+            except OSError:
+                pass
+
+    if result.returncode == 0:
+        return []
+    detail = (result.stderr or result.stdout).strip().splitlines()
+    message = detail[-1] if detail else "Invalid JavaScript syntax"
+    return [f"JavaScript syntax error: {message}"]
+
+
 def basic_confidence_check(converted_code: str, target_lang: str = "") -> dict:
     """
     Heuristic confidence badge. JSX/React checks run only for JS-family
@@ -254,6 +290,8 @@ def basic_confidence_check(converted_code: str, target_lang: str = "") -> dict:
 
     if is_python_family(target_lang):
         issues.extend(find_python_syntax_errors(converted_code))
+    elif (target_lang or "").lower() == "javascript":
+        issues.extend(find_javascript_syntax_errors(converted_code))
 
     migration_notes = converted_code.count("MIGRATION_NOTE")
     if migration_notes:

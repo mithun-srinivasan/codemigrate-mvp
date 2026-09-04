@@ -64,6 +64,7 @@ bug detectors** instead of "did it compile":
 | 5 | Missing React hook imports | `useState(...)` used but not imported from `'react'` |
 | 6 | Duplicate object keys | `{ name: 'a', name: 'b' }` |
 | 7 | Python `ast.parse` (Python targets only) | Invalid syntax in generated Python |
+| 8 | Node `--check` (JavaScript targets when Node is installed) | Invalid syntax in generated JavaScript |
 
 Checks 2–6 run only for JS / TypeScript / React targets so Python/Java/Go
 output is not spammed with JSX false positives.

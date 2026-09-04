@@ -1,9 +1,14 @@
 """Unit tests for the confidence engine. No Ollama / network required."""
 
+import shutil
+
+import pytest
+
 from app import (
     basic_confidence_check,
     find_duplicate_jsx_attributes,
     find_duplicate_object_keys,
+    find_javascript_syntax_errors,
     find_likely_undefined_vars,
     find_mismatched_jsx_tags,
     find_missing_hook_imports,
@@ -94,6 +99,18 @@ def test_duplicate_object_keys():
 def test_python_syntax_error():
     issues = find_python_syntax_errors("def foo(\n")
     assert issues
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is not installed")
+def test_javascript_syntax_is_clean():
+    assert find_javascript_syntax_errors("const answer = 42;") == []
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is not installed")
+def test_javascript_syntax_error_is_low_confidence():
+  result = basic_confidence_check("const answer = ;", "JavaScript")
+  assert result["status"] == "low_confidence"
+  assert any("JavaScript syntax error" in issue for issue in result["issues"])
 
 
 def test_jsx_checks_skipped_for_python_target():
